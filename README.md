@@ -3,8 +3,7 @@ Simple pomodoro timer with notifications
 
 ## Usage
 ```
-$ omo get --notify # 🍅 08:11
-$ omo reset # 🍅 20:00
+$ omo help
 ```
 
 ## Waybar

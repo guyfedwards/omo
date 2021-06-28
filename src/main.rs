@@ -14,21 +14,24 @@ fn main() {
         .author("Guy Edwards <guyfedwards@gmail.com>")
         .about("Simple pomodoro timer")
         .subcommand(
-            App::new("get")
-                .about("get remaining time")
-                .arg(Arg::with_name("notify").short("n").long("notify")),
+            App::new("get").about("get remaining time").arg(
+                Arg::with_name("notify")
+                    .help("trigger system notification if 20 mins has passed when called")
+                    .short("n")
+                    .long("notify")
+                    .value_name("MESSAGE")
+                    .takes_value(true)
+                    .default_value("Omo timer"),
+            ),
         )
         .subcommand(App::new("reset").about("reset timer to 20 mins"))
         .get_matches();
 
     match app.subcommand() {
-        ("get", Some(sub)) => {
-            if sub.is_present("notify") {
-                get(true);
-            } else {
-                get(false);
-            }
-        }
+        ("get", Some(sub)) => match sub.value_of("notify") {
+            Some(v) => get(v),
+            None => get(""),
+        },
         ("reset", Some(_)) => reset(),
         _ => {
             println!("Command must be one of [get, reset]");
@@ -37,7 +40,7 @@ fn main() {
     }
 }
 
-fn get(should_notify: bool) {
+fn get(message: &str) {
     let omo_file = env::temp_dir().join(".omo");
     let contents = fs::read_to_string(&omo_file);
 
@@ -51,8 +54,8 @@ fn get(should_notify: bool) {
             if duration.num_minutes() >= 20 {
                 reset();
 
-                if should_notify {
-                    notify();
+                if message != "" {
+                    notify(&message);
                 }
 
                 return;
@@ -84,7 +87,7 @@ fn get(should_notify: bool) {
 
 fn reset() {
     write(Utc::now().timestamp());
-    get(false);
+    get("");
 }
 
 fn print(time: String) {
@@ -111,8 +114,8 @@ fn write(time: i64) {
     }
 }
 
-fn notify() {
-    match Notification::new().summary("Omo alert").show() {
+fn notify(message: &str) {
+    match Notification::new().summary(&message).show() {
         Ok(_) => {}
         Err(e) => {
             println!("Error sending notification: {}", e);
