@@ -1,49 +1,43 @@
 use chrono::{Duration, NaiveDateTime, Utc};
+use clap::{App, Arg};
 use notify_rust::Notification;
 use std::env;
 use std::fs;
 use std::io::{ErrorKind, Write};
 use std::process;
 
-enum Cmd {
-    Get,
-    Reset,
-}
-
 const SECONDS_20_MINS: i64 = 60 * 20;
 
-impl Cmd {
-    fn from_string(input: &str) -> Option<Cmd> {
-        match input {
-            "get" => Some(Cmd::Get),
-            "reset" => Some(Cmd::Reset),
-            _ => None,
-        }
-    }
-}
-
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    if args.len() < 2 {
-        println!("Must provide a command");
-        process::exit(1)
-    }
+    let app = App::new("omo")
+        .version("1.0")
+        .author("Guy Edwards <guyfedwards@gmail.com>")
+        .about("Simple pomodoro timer")
+        .subcommand(
+            App::new("get")
+                .about("get remaining time")
+                .arg(Arg::with_name("notify").short("n").long("notify")),
+        )
+        .subcommand(App::new("reset").about("reset timer to 20 mins"))
+        .get_matches();
 
-    let cmd = Cmd::from_string(&args[1]);
-
-    match cmd {
-        Some(Cmd::Get) => get(),
-        Some(Cmd::Reset) => {
-            reset();
+    match app.subcommand() {
+        ("get", Some(sub)) => {
+            if sub.is_present("notify") {
+                get(true);
+            } else {
+                get(false);
+            }
         }
-        None => {
+        ("reset", Some(_)) => reset(),
+        _ => {
             println!("Command must be one of [get, reset]");
             process::exit(1)
         }
     }
 }
 
-fn get() {
+fn get(should_notify: bool) {
     let omo_file = env::temp_dir().join(".omo");
     let contents = fs::read_to_string(&omo_file);
 
@@ -56,7 +50,11 @@ fn get() {
 
             if duration.num_minutes() >= 20 {
                 reset();
-                notify();
+
+                if should_notify {
+                    notify();
+                }
+
                 return;
             }
 
@@ -86,7 +84,7 @@ fn get() {
 
 fn reset() {
     write(Utc::now().timestamp());
-    print(String::from("20:00"));
+    get(false);
 }
 
 fn print(time: String) {

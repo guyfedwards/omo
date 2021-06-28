@@ -12,3 +12,4 @@ name = "omo"
 [dependencies]
 chrono = "0.4.19"
 notify-rust = "4.5.2"
+clap = "2.33.3"
