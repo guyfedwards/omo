@@ -1,6 +1,11 @@
 # omo
 Simple pomodoro timer with notifications
 
+## Installation
+```
+$ cargo install --git https://github.com/guyfedwards/omo
+```
+
 ## Usage
 ```
 $ omo get # 🍅 08:11
