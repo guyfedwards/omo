@@ -14,8 +14,10 @@ pub struct App {
 
 #[derive(Clone, Subcommand)]
 pub enum Command {
-    /// Generate Bash completion to get bash shell completion to work you can add `eval
-    /// "$(omo completion)"` to your ~/.bashrc.
+    /// Generate Bash completion to get bash shell completion to work you can add
+    /// `eval "$(omo completion bash|elvish|fish|powershell|zsh)"` to your shell
+    /// start up script.
+    #[clap(verbatim_doc_comment)]
     Completion { shell: clap_complete::Shell },
 
     /// Get remaining time
