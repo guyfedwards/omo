@@ -3,7 +3,7 @@ use clap::{Parser, Subcommand};
 #[derive(Parser)]
 #[command(
     author = "Guy Edwards <guyfedwards@gmail.com>",
-    version = "1.0",
+    version = "1.1",
     about = "Simple pomodoro timer"
 )]
 pub struct App {
