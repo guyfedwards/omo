@@ -3,7 +3,7 @@ use clap::{Parser, Subcommand};
 #[derive(Parser)]
 #[command(
     author = "Guy Edwards <guyfedwards@gmail.com>",
-    version = "1.1",
+    version = "1.2",
     about = "Simple pomodoro timer"
 )]
 pub struct App {
@@ -33,7 +33,11 @@ pub enum Command {
     },
 
     /// Reset timer to 20 mins
-    Reset,
+    Reset {
+        /// Reset the timer to a specified amount of minutes
+       #[arg(short, long = "min")]
+        minutes: Option<i64>,
+    },
 }
 
 impl std::fmt::Display for Command {
