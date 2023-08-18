@@ -1,43 +1,33 @@
-use chrono::{Duration, NaiveDateTime, Utc};
-use clap::{App, Arg};
-use notify_rust::Notification;
+mod app;
+
 use std::env;
 use std::fs;
 use std::io::{ErrorKind, Write};
 use std::process;
 
+use chrono::{Duration, NaiveDateTime, Utc};
+use clap::{CommandFactory, Parser};
+use clap_complete::generate;
+use notify_rust::Notification;
+
 const SECONDS_20_MINS: i64 = 60 * 20;
 
 fn main() {
-    let app = App::new("omo")
-        .version("1.0")
-        .author("Guy Edwards <guyfedwards@gmail.com>")
-        .about("Simple pomodoro timer")
-        .subcommand(
-            App::new("get").about("get remaining time").arg(
-                Arg::with_name("notify")
-                    .help("trigger system notification if 20 mins has passed when called")
-                    .short("n")
-                    .long("notify")
-                    .value_name("MESSAGE")
-                    .takes_value(true)
-                    .default_value("Omo timer"),
-            ),
-        )
-        .subcommand(App::new("reset").about("reset timer to 20 mins"))
-        .get_matches();
+    let app = app::App::parse();
 
-    match app.subcommand() {
-        ("get", Some(sub)) => match sub.value_of("notify") {
-            Some(v) => get(v),
-            None => get(""),
-        },
-        ("reset", Some(_)) => reset(),
-        _ => {
-            println!("Command must be one of [get, reset]");
-            process::exit(1)
+    match app.command {
+        app::Command::Completion { shell } => {
+            generate_completion(shell);
         }
+        app::Command::Get { notify } => get(&notify),
+        app::Command::Reset => reset(),
     }
+}
+
+fn generate_completion(shell: clap_complete::Shell) {
+    let mut cmd = app::App::command();
+    let cmd_name: String = cmd.get_name().into();
+    generate(shell, &mut cmd, cmd_name, &mut std::io::stdout());
 }
 
 fn get(message: &str) {
