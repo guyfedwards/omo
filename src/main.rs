@@ -20,7 +20,7 @@ fn main() {
             generate_completion(shell);
         }
         app::Command::Get { notify } => get(&notify),
-        app::Command::Reset => reset(),
+        app::Command::Reset { minutes } => reset(minutes),
     }
 }
 
@@ -36,13 +36,16 @@ fn get(message: &str) {
 
     match contents {
         Ok(val) => {
-            let stamp = val.parse::<i64>().unwrap();
+            let content: Vec<&str> = val.split(' ').collect();
+            let stamp = content.get(0).unwrap().parse::<i64>().unwrap();
+            let till_stamp = content.get(1).unwrap().parse::<i64>().unwrap();
+            let diff_sec = till_stamp - stamp;
             let s = NaiveDateTime::from_timestamp(stamp, 0);
             let now = Utc::now().naive_utc();
             let duration = now.signed_duration_since(s);
 
-            if duration.num_minutes() >= 20 {
-                reset();
+            if duration.num_seconds() >= diff_sec {
+                reset(Option::Some(diff_sec / 60));
 
                 if message != "" {
                     notify(&message);
@@ -51,7 +54,7 @@ fn get(message: &str) {
                 return;
             }
 
-            let remaining = Duration::seconds(SECONDS_20_MINS - duration.num_seconds());
+            let remaining = Duration::seconds(diff_sec - duration.num_seconds());
 
             print(format!(
                 "{:0>2}:{:0>2}",
@@ -65,7 +68,7 @@ fn get(message: &str) {
                     println!("Error creating file: {}", err);
                     process::exit(1);
                 });
-                reset();
+                reset(Option::None);
             }
             _ => {
                 println!("Error reading file: {}", err);
@@ -75,8 +78,15 @@ fn get(message: &str) {
     }
 }
 
-fn reset() {
-    write(Utc::now().timestamp());
+fn reset(minutes: Option<i64>) {
+    let trigger_time: i64 = match minutes {
+        None => Utc::now().timestamp() + SECONDS_20_MINS,
+        Some(num) => {
+            Utc::now().timestamp() + (num * 60)
+        }
+    };
+
+    write(Utc::now().timestamp(), trigger_time);
     get("");
 }
 
@@ -84,8 +94,7 @@ fn print(time: String) {
     println!("\u{1F345} {}", time);
 }
 
-fn write(time: i64) {
-    let str_time = time.to_string();
+fn write(time: i64, seconds_delay: i64) {
     let omo_file = env::temp_dir().join(".omo");
     let mut file = match fs::File::create(omo_file) {
         Ok(file) => file,
@@ -95,7 +104,9 @@ fn write(time: i64) {
         }
     };
 
-    match file.write(&str_time.as_bytes()) {
+    let str_time_delay = format!("{} {}", time, seconds_delay);
+
+    match file.write(&str_time_delay.as_bytes()) {
         Ok(_) => {}
         Err(e) => {
             println!("Error writing file: {}", e);
